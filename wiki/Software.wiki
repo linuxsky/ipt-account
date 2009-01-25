@@ -1,12 +1,12 @@
 = ipt_account software =
 
-Here you can find newest (and some older) '''ipt_account''' software. You can find installation guide [wiki:Installation here].
+Here you can find newest (and some older) *ipt_account* software. You can find installation guide [wiki:Installation here].
 
 === ipt_account version 0.1.21 ===
 
-Download software [http://www.svn.barbara.eu.org/ipt_account/attachment/wiki/Software/ipt_account-0.1.21-20080623100046.tar.gz?format=raw here] [added 22/07/2007 01:13:30, updated 23/06/2008 10:00:46]
+Download software [http://ipt-account.googlecode.com/files/ipt_account-0.1.21-20080623100046.tar.gz here] [added 22/07/2007 01:13:30, updated 23/06/2008 10:00:46]
 
-'''Notes''':
+*Notes*
 
-  * supports kernel '''2.6.16''', '''2.6.17''', '''2.6.18''', '''2.6.19''', '''2.6.20''', '''2.6.21''', '''2.6.22''', '''2.6.23''', '''2.6.24''' and '''2.6.25'''
-  * support iptables '''1.3.6''', '''1.3.7''', '''1.3.8''', '''1.4.0''', '''1.4.1''' and '''1.4.1.1'''.
+  * supports kernel *2.6.16*, *2.6.17*, *2.6.18*, *2.6.19*, *2.6.20*, *2.6.21*, *2.6.22*, *2.6.23*, *2.6.24* and *2.6.25*,
+  * support iptables *1.3.6*, *1.3.7*, *1.3.8*, *1.4.0*, *1.4.1* and *1.4.1.1*.
