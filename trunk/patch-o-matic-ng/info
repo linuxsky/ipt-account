@@ -1,0 +1,4 @@
+Author: Piotr 'QuakeR' Gasidlo <quaker@barbara.eu.org>
+Status: Stable
+Repository: external
+Recompile: netfilter, iptables
