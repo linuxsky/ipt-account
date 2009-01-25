@@ -1,0 +1,27 @@
+1. Install linux-headers and iptables-dev package.
+
+# uname -a
+Linux psyche 2.6.18-4-amd64 #1 SMP Fri May 4 00:37:33 UTC 2007 x86_64 GNU/Linux
+
+# apt-get install linux-headers-2.6.18-4 iptables-dev
+
+# psyche:~# ls -lad /usr/src/linux-headers-2.6.18-4-amd64/
+drwxr-xr-x 4 root root 4096 2007-07-22 00:49 /usr/src/linux-headers-2.6.18-4-amd64/
+
+2. First build kernel module.
+
+# cd kernel
+
+# make KERNEL_DIR=/usr/src/linux-headers-2.6.18-4-amd64
+# make install
+# depmod -Ae
+
+# cd ..
+
+3. Then build iptables helper library.
+
+# cd iptables
+# make KERNEL_DIR=/usr/src/linux-headers-2.6.18-4-amd64
+# make install
+
+4. Have fun.
