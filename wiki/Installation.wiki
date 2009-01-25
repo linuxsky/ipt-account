@@ -1,6 +1,6 @@
 = Installation =
 
-To install '''ipt_account''' module you must first download [wiki:Software software] that supports your kernel/iptables. Then, depending what distribution you use the installation may differ.
+To install *ipt_account* module you must first download [wiki:Software software] that supports your kernel/iptables. Then, depending what distribution you use the installation may differ.
 
 == Debian/Ubuntu ==
 
@@ -19,7 +19,7 @@ Linux psyche 2.6.20-16-generic #2 SMP Thu Jun 7 20:19:32 UTC 2007 i686 GNU/Linux
 ...
 drwxr-xr-x  4 root root     4096 2007-07-22 01:31 linux-headers-2.6.20-16-generic
 }}}
-  * unpack downloaded '''ipt_acount''' software package (filename may be different):
+  * unpack downloaded *ipt_acount* software package (filename may be different):
 {{{
 # tar xvfj ipt_account.tar.gz
 }}}
