@@ -1,6 +1,6 @@
 = Installation =
 
-To install *ipt_account* module you must first download [wiki:Software software] that supports your kernel/iptables. Then, depending what distribution you use the installation may differ.
+To install *ipt_account* module you must first download [Software software] that supports your kernel/iptables. Then, depending what distribution you use the installation may differ.
 
 == Debian/Ubuntu ==
 
