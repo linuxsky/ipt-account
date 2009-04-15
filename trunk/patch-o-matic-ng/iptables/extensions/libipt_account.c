@@ -12,7 +12,7 @@
 #include <string.h>
 #include <getopt.h>
 
-#include "../kernel/ipt_account.h"
+#include <linux/netfilter_ipv4/ipt_account.h>
 
 #ifndef HIPQUAD
 #define HIPQUAD(addr) \
@@ -83,7 +83,11 @@ int parseip(const char *parameter, u_int32_t *ip) {
 
 static void parsenetwork(const char *parameter, u_int32_t *network) {
   if (!parseip(parameter, network))
+#ifdef XTABLES_VERSION
+    xtables_error(PARAMETER_PROBLEM, "account: wrong ip in network");
+#else
     exit_error(PARAMETER_PROBLEM, "account: wrong ip in network");
+#endif
 }
 
 static void parsenetmaskasbits(const char *parameter, u_int32_t *netmask) {
@@ -91,14 +95,22 @@ static void parsenetmaskasbits(const char *parameter, u_int32_t *netmask) {
   u_int32_t bits;
   
   if ((bits = strtol(parameter, (char **)NULL, 10)) < 0 || bits > 32)
+#ifdef XTABLES_VERSION
+    xtables_error(PARAMETER_PROBLEM, "account: wrong netmask");
+#else
     exit_error(PARAMETER_PROBLEM, "account: wrong netmask");
+#endif
 
   *netmask = 0xffffffff << (32 - bits);
 }
 
 static void parsenetmaskasip(const char *parameter, u_int32_t *netmask) {
   if (!parseip(parameter, netmask))
+#ifdef XTABLES_VERSION
+    xtables_error(PARAMETER_PROBLEM, "account: wrong ip in netmask");
+#else
     exit_error(PARAMETER_PROBLEM, "account: wrong ip in netmask");
+#endif
 }
 
 static void parsenetmask(const char *parameter, u_int32_t *netmask) 
@@ -116,7 +128,11 @@ static void parsenetworkandnetmask(const char *parameter, u_int32_t *network, u_
 
   if (strlen(parameter) > 31)
     /* text is to long, even for 255.255.255.255/255.255.255.255 */
+#ifdef XTABLES_VERSION
+    xtables_error(PARAMETER_PROBLEM, "account: wrong network/netmask");
+#else
     exit_error(PARAMETER_PROBLEM, "account: wrong network/netmask");
+#endif
 
   strncpy(buffer, parameter, 31);
   buffer[31] = 0;
@@ -130,7 +146,11 @@ static void parsenetworkandnetmask(const char *parameter, u_int32_t *network, u_
   parsenetwork(buffer, network);
 
   if ((*network & *netmask) != *network)
+#ifdef XTABLES_VERSION
+    xtables_error(PARAMETER_PROBLEM, "account: wrong network/netmask");
+#else
     exit_error(PARAMETER_PROBLEM, "account: wrong network/netmask");
+#endif
 }
 
 
@@ -202,7 +222,11 @@ static int parse(int c,
     case 201:
       parse_network(optarg, info);
       if (!valid_network_and_netmask(info))
+#ifdef XTABLES_VERSION    
+        xtables_error(PARAMETER_PROBLEM, "account: wrong network/netmask");
+#else
         exit_error(PARAMETER_PROBLEM, "account: wrong network/netmask");
+#endif
       *flags = 1;
       break;
       
@@ -212,7 +236,11 @@ static int parse(int c,
         strncpy(info->name, optarg, IPT_ACCOUNT_NAME_LEN);
         info->name[IPT_ACCOUNT_NAME_LEN] = '\0';
       } else
+#ifdef XTABLES_VERSION    
+        xtables_error(PARAMETER_PROBLEM, "account: Too long table name");      
+#else
         exit_error(PARAMETER_PROBLEM, "account: Too long table name");      
+#endif
       break;  
     /* --ashort */
     case 203:
@@ -227,7 +255,11 @@ static int parse(int c,
 /* Final check whether network/netmask was specified */
 static void final_check(unsigned int flags) {
   if (!flags)
+#ifdef XTABLES_VERSION    
+    xtables_error(PARAMETER_PROBLEM, "account: You need specify '--aaddr' parameter");
+#else
     exit_error(PARAMETER_PROBLEM, "account: You need specify '--aaddr' parameter");
+#endif
 }
 
 /* Function used for printing rule with account match for iptables -L */
