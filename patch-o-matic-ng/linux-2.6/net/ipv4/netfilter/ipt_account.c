@@ -1,4 +1,4 @@
-/* Copyright (c) 2004-2008 Piotr 'QuakeR' Gasidlo <quaker@barbara.eu.org>
+/* Copyright (c) 2004-2009 Piotr 'QuakeR' Gasidlo <quaker@barbara.eu.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -28,7 +28,7 @@ MODULE_LICENSE("GPL");
 #else
 #include <linux/netfilter_ipv4/ip_tables.h>
 #endif
-#include "ipt_account.h"
+#include <linux/netfilter_ipv4/ipt_account.h>
 
 /* defaults, can be overriden */
 static unsigned int netmask = 16; /* Safe netmask, if you try to create table
@@ -356,6 +356,9 @@ static bool
 static int
 #endif
 match(const struct sk_buff *skb,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
+    const struct xt_match_param *par
+#else    
     const struct net_device *in,
     const struct net_device *out,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,17)
@@ -365,12 +368,18 @@ match(const struct sk_buff *skb,
     int offset,
     unsigned int protoff,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
-    bool *hotdrop)
+    bool *hotdrop
 #else
-    int *hotdrop)
+    int *hotdrop
 #endif
+#endif
+)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
+  struct t_ipt_account_info *info = (struct t_ipt_account_info *)(par->matchinfo);
+#else
   struct t_ipt_account_info *info = (struct t_ipt_account_info *)matchinfo;
+#endif
   struct t_ipt_account_table *table = info->table;
   u_int32_t address;  
   /* Get current time. */
@@ -480,7 +489,11 @@ static bool
 #else
 static int
 #endif
-checkentry(const char *tablename,
+checkentry(
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
+    const struct xt_mtchk_param *par
+#else
+    const char *tablename,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,16)    
      const void *ip,
 #else
@@ -493,9 +506,15 @@ checkentry(const char *tablename,
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,19)
      unsigned int matchsize,
 #endif     
-     unsigned int hook_mask)
+     unsigned int hook_mask
+#endif
+)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
+  struct t_ipt_account_info *info = (struct t_ipt_account_info*)(par->matchinfo);
+#else
   struct t_ipt_account_info *info = matchinfo;
+#endif
   struct t_ipt_account_table *table;
 
 #ifdef DEBUG_IPT_ACCOUNT  
@@ -624,6 +643,9 @@ checkentry(const char *tablename,
  */
 static void
 destroy(
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
+    const struct xt_mtdtor_param *par
+#else
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,17)    
     const struct xt_match *match,
 #endif    
@@ -633,9 +655,14 @@ destroy(
     void *matchinfo,
     unsigned int matchsize
 #endif    
+#endif
 )
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
+  struct t_ipt_account_info *info = (struct t_ipt_account_info*)(par->matchinfo);
+#else
   struct t_ipt_account_info *info = matchinfo;
+#endif
   
 #ifdef DEBUG_IPT_ACCOUNT  
   if (debug) printk(KERN_DEBUG "ipt_account [destroy]: name = %s\n", info->name);
