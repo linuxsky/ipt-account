@@ -1,4 +1,4 @@
-/* Copyright (c) 2004-2009 Piotr 'QuakeR' Gasidlo <quaker@barbara.eu.org>
+/* Copyright (c) 2004-2011 Piotr 'QuakeR' Gasidlo <quaker@barbara.eu.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -29,6 +29,15 @@ MODULE_LICENSE("GPL");
 #include <linux/netfilter_ipv4/ip_tables.h>
 #endif
 #include "ipt_account.h"
+
+/* Compatibility, should replace all HIPQUAD with %pI4 and use network byte order not host byte order */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
+#define HIPQUAD(addr) \
+       ((unsigned char *)&addr)[3], \
+       ((unsigned char *)&addr)[2], \
+       ((unsigned char *)&addr)[1], \
+       ((unsigned char *)&addr)[0]
+#endif
 
 /* defaults, can be overriden */
 static unsigned int netmask = 16; /* Safe netmask, if you try to create table
@@ -106,7 +115,11 @@ struct t_ipt_account_table {
 
 static LIST_HEAD(ipt_account_tables);
 static rwlock_t ipt_account_lock = RW_LOCK_UNLOCKED; /* lock, to assure that table list can be safely modified */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+static DEFINE_MUTEX(ipt_account_mutex); /* additional checkentry protection */
+#else
 static DECLARE_MUTEX(ipt_account_mutex); /* additional checkentry protection */
+#endif
 
 static struct file_operations ipt_account_proc_fops;
 static struct proc_dir_entry *ipt_account_procdir;
@@ -356,7 +369,9 @@ static bool
 static int
 #endif
 match(const struct sk_buff *skb,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+    struct xt_action_param *par
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
     const struct xt_match_param *par
 #else    
     const struct net_device *in,
@@ -484,7 +499,9 @@ match(const struct sk_buff *skb,
 /*
  * Checkentry function.
  */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+static int
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
 static bool
 #else
 static int
@@ -525,7 +542,9 @@ checkentry(
 #ifdef DEBUG_IPT_ACCOUNT  
     if (debug) printk(KERN_DEBUG "ipt_account [checkentry]: matchsize %u != %u\n", matchsize, IPT_ALIGN(sizeof(struct t_ipt_account_info)));
 #endif    
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+    return -EINVAL;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
     return false;
 #else
     return 0;
@@ -538,7 +557,9 @@ checkentry(
    */
   if (info->netmask < ((~0L << (32 - netmask)) & 0xffffffff)) {
     printk(KERN_ERR "ipt_account[checkentry]: too big netmask (increase module 'netmask' parameter).\n");
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+    return -EINVAL;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
     return false;
 #else
     return 0;
@@ -546,7 +567,9 @@ checkentry(
   }
   if ((info->network & info->netmask) != info->network) {
     printk(KERN_ERR "ipt_account[checkentry]: wrong network/netmask.\n");
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+    return -EINVAL;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
     return false;
 #else
     return 0;
@@ -554,7 +577,9 @@ checkentry(
   }
   if (info->name[0] == '\0') {
     printk(KERN_ERR "ipt_account[checkentry]: wrong table name.\n");
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+    return -EINVAL;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
     return false;
 #else
     return 0;
@@ -565,21 +590,37 @@ checkentry(
    * We got new rule. Try to find table with the same name as given in info structure.
    * Mutex magic based on xt_hashlimit.c.
    */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+  mutex_lock(&ipt_account_mutex);
+#else
   down(&ipt_account_mutex);
+#endif
   table = ipt_account_table_find_get(info->name);
   if (table) {
     if (info->table != NULL) {
       if (info->table != table) {
         printk(KERN_ERR "ipt_account[checkentry]: reloaded rule has invalid table pointer.\n");
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+        mutex_unlock(&ipt_account_mutex);
+#else
         up(&ipt_account_mutex);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+        return -EINVAL;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
         return false;
 #else
         return 0;
 #endif
       }
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+      mutex_unlock(&ipt_account_mutex);
+#else
       up(&ipt_account_mutex);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+      return -EINVAL;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
       return true;
 #else
       return 1;
@@ -598,8 +639,14 @@ checkentry(
          * Remember to release table usage counter.
          */
         ipt_account_table_put(table);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+        mutex_unlock(&ipt_account_mutex);
+#else
         up(&ipt_account_mutex);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+        return -EINVAL;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
         return false;
 #else
         return 0;
@@ -622,15 +669,25 @@ checkentry(
      */
     info->table = table = ipt_account_table_init(info);
     if (!table) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+      mutex_unlock(&ipt_account_mutex);
+#else
       up(&ipt_account_mutex);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
+      return -EINVAL;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
       return false;
 #else
       return 0;
 #endif
     }
   }
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+  mutex_unlock(&ipt_account_mutex);
+#else
   up(&ipt_account_mutex);
+#endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
   return true;
 #else
@@ -691,7 +748,9 @@ static struct xt_match account_match = {
 static struct ipt_match account_match = { 
 #endif  
   .name = "account", 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,21)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+  .family = NFPROTO_IPV4,
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,21)
   .family = AF_INET,
 #endif  
   .match = &match, 
