@@ -8,7 +8,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef IPTABLES_VERSION
 #include <iptables.h>
+#elif defined XTABLES_VERSION
+#include <xtables.h>
+#else
+#error IPTABLES_VERSION nor XTABLES_VERSION not defined.
+#endif
 #include <string.h>
 #include <getopt.h>
 
@@ -34,7 +40,12 @@ static void help(void) {
       "       table will colect only short statistics (only total counters\n"
       "       without splitting it into protocols.\n"
   , 
-  IPTABLES_VERSION);
+#ifdef IPTABLES_VERSION
+  IPTABLES_VERSION
+#else
+  XTABLES_VERSION
+#endif
+  );
 };
 
 static struct option opts[] = {

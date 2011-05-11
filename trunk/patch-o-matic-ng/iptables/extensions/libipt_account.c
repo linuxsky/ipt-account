@@ -1,4 +1,4 @@
-/* Copyright (c) 2004-2009 Piotr 'QuakeR' Gasidlo <quaker@barbara.eu.org>
+/* Copyright (c) 2004-2011 Piotr 'QuakeR' Gasidlo <quaker@barbara.eu.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -8,11 +8,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef IPTABLES_VERSION
 #include <iptables.h>
+#elif defined XTABLES_VERSION
+#include <xtables.h>
+#else
+#error IPTABLES_VERSION nor XTABLES_VERSION not defined.
+#endif
 #include <string.h>
 #include <getopt.h>
 
-#include <linux/netfilter_ipv4/ipt_account.h>
+#include "../kernel/ipt_account.h"
 
 #ifndef HIPQUAD
 #define HIPQUAD(addr) \
@@ -34,7 +40,12 @@ static void help(void) {
       "       table will colect only short statistics (only total counters\n"
       "       without splitting it into protocols.\n"
   , 
-  IPTABLES_VERSION);
+#ifdef IPTABLES_VERSION
+  IPTABLES_VERSION
+#else
+  XTABLES_VERSION
+#endif
+  );
 };
 
 static struct option opts[] = {
