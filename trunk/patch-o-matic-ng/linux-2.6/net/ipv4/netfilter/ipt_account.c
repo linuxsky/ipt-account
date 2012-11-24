@@ -1,4 +1,4 @@
-/* Copyright (c) 2004-2011 Piotr 'QuakeR' Gasidlo <quaker@barbara.eu.org>
+/* Copyright (c) 2004-2012 Piotr 'QuakeR' Gasidlo <quaker@barbara.eu.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -28,7 +28,7 @@ MODULE_LICENSE("GPL");
 #else
 #include <linux/netfilter_ipv4/ip_tables.h>
 #endif
-#include "ipt_account.h"
+#include <linux/netfilter_ipv4/ipt_account.h>
 
 /* Compatibility, should replace all HIPQUAD with %pI4 and use network byte order not host byte order */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
@@ -114,7 +114,11 @@ struct t_ipt_account_table {
 };
 
 static LIST_HEAD(ipt_account_tables);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)
+static rwlock_t ipt_account_lock = __RW_LOCK_UNLOCKED(ipt_account_lock); /* lock, to assure that table list can be safely modified */
+#else
 static rwlock_t ipt_account_lock = RW_LOCK_UNLOCKED; /* lock, to assure that table list can be safely modified */
+#endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
 static DEFINE_MUTEX(ipt_account_mutex); /* additional checkentry protection */
 #else
@@ -192,7 +196,11 @@ ipt_account_table_init(struct t_ipt_account_info *info)
   /*
    * Reset locks.
    */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)
+  table->stats_lock = __RW_LOCK_UNLOCKED(table->stats_lock);
+#else
   table->stats_lock = RW_LOCK_UNLOCKED;
+#endif
   
   /*
    * Create /proc/ipt_account/name entry.
@@ -1061,7 +1069,7 @@ static int __init init(void)
 {
   int ret = 0;
 
-  printk(KERN_INFO "ipt_account %s : Piotr Gasidlo <quaker@barbara.eu.org>, http://www.barbara.eu.org/~quaker/ipt_account/\n", IPT_ACCOUNT_VERSION);
+  printk(KERN_INFO "ipt_account %s : Piotr Gasidlo <quaker@barbara.eu.org>, http://code.google.com/p/ipt-account/\n", IPT_ACCOUNT_VERSION);
 
   /* Check module parameters. */
   if (netmask > 32 || netmask < 0) {
